@@ -1,0 +1,15 @@
+Welcome to Mobile LLM Lab, your complete solution for training AI models on your phone.
+Training machine learning models has never been easier than with our integrated pipeline.
+You can fine-tune models like GPT-2, BERT, and many others directly from Termux.
+Google Colab provides free GPU access, making training fast and efficient.
+Simply add your training data, configure your model, and let the system handle the rest.
+This sample dataset demonstrates the text format - one training example per line.
+You can replace this file with your own data or create new dataset files.
+The training script automatically handles text, CSV, and JSON formats.
+Each model you train gets its own folder with checkpoints and configuration files.
+Models are automatically pushed to your Hugging Face account when training completes.
+You can train multiple models simultaneously and manage them all from one place.
+The Termux interface provides simple one-line commands for all operations.
+GitHub Actions orchestrates the workflow while Colab provides the computing power.
+This integrated approach makes professional ML accessible from any Android device.
+Start experimenting with small datasets and gradually scale up as you learn.

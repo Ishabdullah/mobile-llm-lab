@@ -1,0 +1,19 @@
+# Mobile LLM Lab - Python Dependencies
+
+# Core ML Libraries
+transformers>=4.36.0
+datasets>=2.16.0
+torch>=2.1.0
+accelerate>=0.25.0
+
+# Hugging Face Hub
+huggingface_hub>=0.20.0
+
+# Training utilities
+numpy>=1.24.0
+pandas>=2.0.0
+scikit-learn>=1.3.0
+
+# Optional: For better performance
+# sentencepiece>=0.1.99  # For certain tokenizers
+# protobuf>=3.20.0       # For certain models

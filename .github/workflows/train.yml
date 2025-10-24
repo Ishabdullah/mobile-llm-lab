@@ -1,0 +1,197 @@
+name: Train Model
+
+on:
+  # Manual trigger with parameters
+  workflow_dispatch:
+    inputs:
+      model_name:
+        description: 'Name for your fine-tuned model'
+        required: true
+        default: 'assistant_v1'
+      base_model:
+        description: 'Base model from Hugging Face'
+        required: true
+        default: 'distilbert-base-uncased'
+      dataset:
+        description: 'Path to dataset in repo'
+        required: true
+        default: 'dataset/mydata.txt'
+      task_type:
+        description: 'Task type (causal_lm or classification)'
+        required: false
+        default: 'causal_lm'
+      epochs:
+        description: 'Number of training epochs'
+        required: false
+        default: '3'
+      batch_size:
+        description: 'Training batch size'
+        required: false
+        default: '8'
+      push_to_hub:
+        description: 'Push to Hugging Face Hub (true/false)'
+        required: false
+        default: 'true'
+
+  # Auto-trigger when dataset files are added/modified
+  push:
+    paths:
+      - 'dataset/**'
+      - 'models/*/training_config.json'
+
+jobs:
+  prepare-training:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Display training configuration
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🚀 MOBILE LLM LAB - TRAINING INITIATED"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "Trigger: Manual Dispatch"
+            echo "Model Name: ${{ github.event.inputs.model_name }}"
+            echo "Base Model: ${{ github.event.inputs.base_model }}"
+            echo "Dataset: ${{ github.event.inputs.dataset }}"
+            echo "Task Type: ${{ github.event.inputs.task_type }}"
+            echo "Epochs: ${{ github.event.inputs.epochs }}"
+            echo "Batch Size: ${{ github.event.inputs.batch_size }}"
+            echo "Push to Hub: ${{ github.event.inputs.push_to_hub }}"
+          else
+            echo "Trigger: Push to repository"
+            echo "Changed files:"
+            git diff --name-only HEAD~1 HEAD
+          fi
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+      - name: Generate Colab training link
+        run: |
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "📊 TRAINING OPTIONS"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+          echo "Option 1: Train on Google Colab (Recommended - Free GPU)"
+          echo "----------------------------------------"
+          REPO_URL="https://github.com/${{ github.repository }}"
+          COLAB_URL="https://colab.research.google.com/github/${{ github.repository }}/blob/main/train_colab.ipynb"
+          echo "Open this link in your browser:"
+          echo "$COLAB_URL"
+          echo ""
+          echo "Option 2: Train Locally/Termux (CPU only, slower)"
+          echo "----------------------------------------"
+          echo "Run this command in Termux:"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "./train_model.sh train \\"
+            echo "  --model_name '${{ github.event.inputs.model_name }}' \\"
+            echo "  --base_model '${{ github.event.inputs.base_model }}' \\"
+            echo "  --dataset '${{ github.event.inputs.dataset }}' \\"
+            echo "  --task_type '${{ github.event.inputs.task_type }}' \\"
+            echo "  --epochs ${{ github.event.inputs.epochs }} \\"
+            echo "  --batch_size ${{ github.event.inputs.batch_size }}"
+          fi
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+      - name: Install dependencies (for local validation)
+        run: |
+          pip install transformers datasets huggingface_hub
+
+      - name: Validate dataset exists
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          DATASET="${{ github.event.inputs.dataset }}"
+          if [ -f "$DATASET" ]; then
+            echo "✓ Dataset found: $DATASET"
+            echo "Dataset size: $(wc -l < $DATASET) lines"
+            echo "First 3 lines:"
+            head -n 3 "$DATASET"
+          else
+            echo "⚠️  WARNING: Dataset not found at $DATASET"
+            echo "Available datasets:"
+            find dataset/ -type f 2>/dev/null || echo "No dataset folder found"
+          fi
+
+      - name: Create model directory
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          MODEL_DIR="models/${{ github.event.inputs.model_name }}"
+          mkdir -p "$MODEL_DIR"
+          echo "✓ Created model directory: $MODEL_DIR"
+
+      - name: Save training config
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          MODEL_DIR="models/${{ github.event.inputs.model_name }}"
+          cat > "$MODEL_DIR/training_config.json" << EOF
+          {
+            "model_name": "${{ github.event.inputs.model_name }}",
+            "base_model": "${{ github.event.inputs.base_model }}",
+            "dataset": "${{ github.event.inputs.dataset }}",
+            "task_type": "${{ github.event.inputs.task_type }}",
+            "epochs": ${{ github.event.inputs.epochs }},
+            "batch_size": ${{ github.event.inputs.batch_size }},
+            "push_to_hub": ${{ github.event.inputs.push_to_hub }},
+            "triggered_at": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+            "triggered_by": "${{ github.actor }}",
+            "trigger_type": "${{ github.event_name }}"
+          }
+          EOF
+          echo "✓ Training config saved"
+          cat "$MODEL_DIR/training_config.json"
+
+      - name: Commit training config
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          git add models/${{ github.event.inputs.model_name }}/training_config.json
+          git commit -m "Add training config for ${{ github.event.inputs.model_name }}" || echo "No changes to commit"
+          git push || echo "Nothing to push"
+
+      - name: Create training status issue
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue create \
+            --title "Training: ${{ github.event.inputs.model_name }}" \
+            --body "## Training Job Started
+
+          **Model Name:** ${{ github.event.inputs.model_name }}
+          **Base Model:** ${{ github.event.inputs.base_model }}
+          **Dataset:** ${{ github.event.inputs.dataset }}
+          **Triggered by:** @${{ github.actor }}
+
+          ### Next Steps:
+          1. Open the [Colab notebook](https://colab.research.google.com/github/${{ github.repository }}/blob/main/train_colab.ipynb)
+          2. Update the configuration in the first code cell
+          3. Run all cells to start training
+          4. Check [Hugging Face](https://huggingface.co/models) for the trained model
+
+          _This issue will track the training progress. Close it when training is complete._" \
+            --label "training" || echo "Could not create issue"
+
+      - name: Training summary
+        run: |
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "✅ SETUP COMPLETE"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+          echo "The training configuration has been prepared."
+          echo "To start actual training (with GPU), use Google Colab."
+          echo ""
+          echo "GitHub Actions runners don't have GPUs, so training here would be"
+          echo "extremely slow. Use Colab for fast training with free GPUs."
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

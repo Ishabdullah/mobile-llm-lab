@@ -1,0 +1,75 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# PyTorch
+*.pth
+*.pt
+
+# Model checkpoints (only if very large)
+models/*/checkpoint-*/
+models/*/runs/
+models/*/logs/
+
+# Hugging Face cache
+.cache/
+huggingface/
+
+# Tokens and secrets
+.env
+.env.local
+*.token
+*.key
+secrets.txt
+
+# OS
+.DS_Store
+Thumbs.db
+*.log
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Large dataset files (optional - uncomment if you want to exclude large files)
+# dataset/*.bin
+# dataset/*.parquet
+# dataset/*.arrow
